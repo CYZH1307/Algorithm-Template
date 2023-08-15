@@ -1,0 +1,80 @@
+#include<iostream>
+#include<vector>
+#include<string>
+#include<unordered_map>
+using namespace std;
+
+int main() {
+    auto stoi = [] (string s) { //将string类型的表达值转化为分值，比如9S(黑桃9)转化为39
+        int ret = 0;
+        if('0' <= s[0] && s[0] <= '9') ret += 4 * (s[0] - '0');
+        else if(s[0] == 'T') ret += 4 * 10;
+        else if(s[0] == 'J') ret += 4 * 11;
+        else if(s[0] == 'Q') ret += 4 * 12;
+        else if(s[0] == 'K') ret += 4 * 13;
+        else if(s[0] == 'A') ret += 4 * 14;
+         
+        if(s[1] == 'S') ret += 3; //黑桃spade
+        else if(s[1] == 'H') ret += 2; //红桃heart
+        else if(s[1] == 'C') ret += 1; //梅花club
+        else if(s[1] == 'D') ret += 0; //分块dianmond
+        
+        return ret;
+    };
+     
+    auto chk = [](vector<int> s) { //5张牌，按照德州扑克的规矩返回分值大小比较牌力大小
+        sort(s.begin(), s.end());
+        int sun = s[0] / 4, hua = 1;
+        for(int i = 1; i < 5; i++) {
+            if(s[i - 1] % 4 != s[i] % 4) hua = 0;
+            if(s[i - 1] / 4 + 1 != s[i] / 4) sun = 0;
+        }
+        if(s[0]/4 == 2 && s[1]/4 == 3 && s[2]/4 == 4 && s[3]/4 == 5 && s[4]/4==14) sun = 1;
+         
+        unordered_map<int, int> mp;
+        for(int i = 0; i < 5; i++) mp[s[i] / 4] ++;
+         
+        vector<int> cnt[4];
+        for(auto [k, v] : mp) {
+            cnt[v - 1].push_back(k);
+        }
+        for(int i = 0; i < 4; i++) sort(cnt[i].begin(), cnt[i].end());
+        const int sk = 17, N = 1e8;
+         
+        int soc = 0, p = 1;
+        if(sun && hua) soc = sun + N * 8; //同花顺
+        else if(cnt[3].size())  { //四条
+            soc += p * cnt[3][0];
+            soc += N * 7;
+        }
+        else if(cnt[2].size() && cnt[1].size()) { //葫芦
+            soc += p * cnt[1][0], p *= sk;
+            soc += p * cnt[2][0], p *= sk;
+            soc += N * 6;
+        }
+        else if(hua) { //同花
+            for(int i = 0; i < 5; i++) soc += p * cnt[0][i], p *= sk;
+            soc += N * 5;
+        }
+        else if(sun) soc = sun + N * 4; //顺子
+        else if(cnt[2].size()) { //三条
+            for(int i = 0; i < 2; i++) soc += p * cnt[0][i], p *= sk;
+            soc += p * cnt[2][0];
+            soc += N * 3;
+        }
+        else if(cnt[1].size() > 1) { //两对
+            soc += p * cnt[0][0], p *= sk;
+            for(int i = 0; i < 2; i++) soc += p * cnt[1][i], p *= sk;
+            soc += N * 2;
+        }
+        else if(cnt[1].size()) { //一对
+            for(int i = 0; i < 3; i++) soc += p * cnt[0][i], p *= sk;
+            soc += p * cnt[1][0];
+            soc += N;
+        }
+        else { //高牌
+            for(int i = 0; i < 5; i++) soc += p * cnt[0][i], p *= sk;
+        }
+        return soc; //牌型得分
+    };
+}
